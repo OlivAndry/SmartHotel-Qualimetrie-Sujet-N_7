@@ -1,90 +1,77 @@
-var express = require('express');
-var app = express();
+const express = require('express');
+const app = express();
 app.use(express.json());
-app.listen(3000, () => console.log('Server running on port 3000'));
 
-// Calcul prix chambre - TOUTE LA LOGIQUE DANS UNE SEULE FONCTION
-function calculer(req) {
-  var x = req.body;
-  var p = 0;
-  var t = 0;
-  var n = x.nights || 0;
-  var b = x.basePrice || 100;
-  var s = x.season;
-  var w = x.hasWeekend || false;
-  var v = x.hasSeaView || false;
-  var vip = x.isVip || false;
-  var g = x.guests || 0;
-  var start = new Date(x.startDate);
-  var end = new Date(x.endDate);
+// ==================== FONCTIONS PURES ====================
 
-  // Saison
-  if (s === 'Haute') {
-    p = b * 1.5;
-  } else {
-    p = b;
-  }
-
-  // Week-end
-  if (w) {
-    p = p * 1.2;
-  }
-
-  // Réduction long séjour
-  if (n > 7) {
-    p = p * 0.85;
-  }
-
-  // Vue mer
-  if (v) {
-    p = p + 30 * n;
-  }
-
-  // VIP
-  if (vip) {
-    // rien, gratuit
-  } else {
-    if (g > 0) {
-      p = p + 15 * n * g;
-    }
-  }
-
-  return p;
+// Calcule le prix de base selon la saison
+function applySeason(basePrice, season) {
+  return season === 'Haute' ? basePrice * 1.5 : basePrice;
 }
 
-// Route API
+// Applique la majoration week-end
+function applyWeekend(price, hasWeekend) {
+  return hasWeekend ? price * 1.2 : price;
+}
+
+// Applique la réduction long séjour
+function applyLongStayDiscount(price, nights) {
+  return nights > 7 ? price * 0.85 : price;
+}
+
+// Ajoute la vue mer
+function addSeaView(price, hasSeaView, nights) {
+  return hasSeaView ? price + 30 * nights : price;
+}
+
+// Ajoute les petits-déjeuners
+function addBreakfast(total, isVip, nights, guests) {
+  if (isVip || guests === 0) return total;
+  return total + (15 * nights * guests);
+}
+
+// Fonction principale (découpée en 5 sous-fonctions)
+function calculatePrice(data) {
+  const { basePrice, season, hasWeekend, nights, hasSeaView, isVip, guests } = data;
+
+  let pricePerNight = basePrice;
+
+  pricePerNight = applySeason(pricePerNight, season);
+  pricePerNight = applyWeekend(pricePerNight, hasWeekend);
+  pricePerNight = applyLongStayDiscount(pricePerNight, nights);
+
+  let total = pricePerNight * nights;
+
+  if (hasSeaView) {
+    total += 30 * nights;
+  }
+
+  if (!isVip && guests > 0) {
+    total += 15 * nights * guests;
+  }
+
+  return Math.round(total * 100) / 100;
+}
+
+// ==================== ROUTES ====================
+
 app.post('/api/book-room', (req, res) => {
-  var result = 0;
-  var input = req.body;
+  const { basePrice, nights, season, startDate, endDate } = req.body;
 
-  // Validation rudimentaire (mauvaise)
-  if (!input) {
-    return res.status(400).json({ error: 'no body' });
+  if (!basePrice || !nights) {
+    return res.status(400).json({ error: 'basePrice et nights requis' });
   }
 
-  // Calcul
-  result = calculer(input);
-
-  // Ajouter desserts gratuits si >30e (logique métier)
-  if (result > 30) {
-    result = result; // rien, mais fallait le mettre
-  }
-
-  res.json({ total: Math.round(result * 100) / 100 });
+  const total = calculatePrice(req.body);
+  res.json({ total });
 });
 
-// Routes inutiles
-app.get('/', (req, res) => {
-  res.send('SmartHotel API');
-});
+app.get('/', (req, res) => res.send('SmartHotel API'));
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
+// ==================== SERVEUR ====================
+if (require.main === module) {
+  app.listen(3000, () => console.log('Server running on port 3000'));
+}
 
-// Error handling basique
-app.use((err, req, res, next) => {
-  res.status(500).json({ error: err.message });
-});
-
-module.exports = app;
+module.exports = { app, calculatePrice };
