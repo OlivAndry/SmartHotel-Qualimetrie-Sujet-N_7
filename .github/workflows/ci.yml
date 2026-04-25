@@ -17,10 +17,9 @@ jobs:
 
       - run: npm install
 
-      - run: npx eslint index.js
+      - run: npm test
 
-      - name: Run tests with coverage
-        run: npm test
+      - run: ls coverage
 
       - uses: SonarSource/sonarcloud-github-action@master
         env:
