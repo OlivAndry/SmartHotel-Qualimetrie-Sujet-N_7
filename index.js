@@ -46,6 +46,7 @@ app.get('/', (req, res) => res.send('SmartHotel API'));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // ==================== SERVER ====================
+/* istanbul ignore next */
 if (require.main === module) {
   app.listen(3000, () => console.log('Server running on port 3000'));
 }
