@@ -13,11 +13,14 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
 
       - run: npm install
 
       - run: npx eslint index.js
+
+      - name: Run tests with coverage
+        run: npm test
 
       - uses: SonarSource/sonarcloud-github-action@master
         env:
@@ -26,3 +29,4 @@ jobs:
           args: >
             -Dsonar.projectKey=OlivAndry_SmartHotel-Qualimetrie-Sujet-N_7
             -Dsonar.organization=olivandry
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
