@@ -3,29 +3,35 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
 
-      - run: npm test
+      - name: Lint
+        run: npm run lint
 
-      - run: ls coverage
+      - name: Test avec coverage
+        run: npm test
 
-      - uses: SonarSource/sonarcloud-github-action@master
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=OlivAndry_SmartHotel-Qualimetrie-Sujet-N_7
-            -Dsonar.organization=olivandry
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info

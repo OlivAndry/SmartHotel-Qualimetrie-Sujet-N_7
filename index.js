@@ -18,17 +18,13 @@ function applyLongStay(price, nights) {
 // ==================== CORE ====================
 function calculatePrice(data) {
   const { basePrice, season, hasWeekend, nights, hasSeaView, isVip, guests } = data;
-
   let pricePerNight = basePrice;
   pricePerNight = applySeason(pricePerNight, season);
   pricePerNight = applyWeekend(pricePerNight, hasWeekend);
   pricePerNight = applyLongStay(pricePerNight, nights);
-
   let total = pricePerNight * nights;
-
   if (hasSeaView) total += 30 * nights;
   if (!isVip && guests > 0) total += 15 * nights * guests;
-
   return Math.round(total * 100) / 100;
 }
 
